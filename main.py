@@ -1,12 +1,21 @@
-from fastapi import FastAPI
-from schemas.transaction import TransactionCreate
-from repositories.transaction import TransactionRepository
-from services.transaction import TransactionService
+from fastapi import FastAPI, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.models.transaction import Transaction
+
+from app.schemas.transaction import TransactionCreate, TransactionResponse
+from app.repositories.transaction import TransactionRepository
+from app.services.transaction import TransactionService
 
 app = FastAPI()
 
-repository = TransactionRepository()
-service = TransactionService(repository)
+
+def get_transaction_service(
+    session: AsyncSession = Depends(get_db),
+) -> TransactionService:
+    repository = TransactionRepository(session)
+    return TransactionService(repository)
 
 
 @app.get("/")
@@ -14,12 +23,16 @@ def home():
     return {"message": "Welcome to the Expense Tracker API"}
 
 
-@app.post("/transactions")
-def create_transaction(transaction: TransactionCreate):
-    transaction_data = transaction.model_dump(mode="json")
-    return service.create_transaction(transaction_data)
+@app.post("/transactions", response_model=TransactionResponse)
+async def create_transaction(
+    transaction: TransactionCreate,
+    service: TransactionService = Depends(get_transaction_service),
+):
+    return await service.create_transaction(transaction.model_dump(mode="json"))
 
 
-@app.get("/transactions")
-def get_transactions():
-    return service.get_transactions()
+@app.get("/transactions", response_model=list[TransactionResponse])
+async def get_transactions(
+    service: TransactionService = Depends(get_transaction_service),
+):
+    return await service.get_transactions()
