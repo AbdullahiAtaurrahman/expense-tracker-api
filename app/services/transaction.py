@@ -11,3 +11,6 @@ class TransactionService:
 
     async def get_transactions(self) -> list[Transaction]:
         return await self.repository.get_transactions()
+
+    async def get_transaction_by_id(self, transaction_id: id) -> Transaction | None:
+        return await self.repository.get_transaction_by_id(transaction_id)

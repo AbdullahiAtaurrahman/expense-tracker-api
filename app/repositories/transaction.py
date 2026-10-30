@@ -23,9 +23,9 @@ class TransactionRepository:
 
         return list(result.scalars().all())
 
-    async def get_transaction_by_id(self, transaction_id: int) -> list[Transaction]:
-        result = await self.session.execute(select(Transaction)).where(
-            Transaction.id == transaction_id
+    async def get_transaction_by_id(self, transaction_id: int) -> Transaction | None:
+        result = await self.session.execute(
+            select(Transaction).where(Transaction.id == transaction_id)
         )
 
-        return list(result.scalar_one_or_none())
+        return result.scalar_one_or_none()

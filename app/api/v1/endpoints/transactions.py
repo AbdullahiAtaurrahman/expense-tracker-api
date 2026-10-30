@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -36,3 +36,18 @@ async def get_transactions(
     service: TransactionService = Depends(get_transaction_service),
 ):
     return await service.get_transactions()
+
+
+@router.get("/transactions/{transaction_id}", response_model=TransactionResponse)
+async def get_transaction_by_id(
+    transaction_id: int,
+    service: TransactionService = Depends(get_transaction_service),
+):
+    transaction = await service.get_transaction_by_id(transaction_id)
+
+    if transaction is None:
+        raise HTTPException(
+            status_code=404, detail=f"Transaction with ID {transaction_id} not found"
+        )
+
+    return transaction
