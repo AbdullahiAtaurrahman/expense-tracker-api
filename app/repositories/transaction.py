@@ -18,6 +18,23 @@ class TransactionRepository:
 
         return transaction
 
+    async def update_transaction(
+        self, transaction_id: int, transaction_data: dict
+    ) -> Transaction | None:
+
+        transaction = await self.get_transaction_by_id(transaction_id)
+
+        if transaction is None:
+            return None
+
+        for key, value in transaction_data.items():
+            setattr(transaction, key, value)
+
+        await self.session.commit()
+        await self.session.refresh(transaction)
+
+        return transaction
+
     async def get_transactions(self) -> list[Transaction]:
         result = await self.session.execute(select(Transaction))
 
