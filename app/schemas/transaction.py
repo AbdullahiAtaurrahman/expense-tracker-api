@@ -18,3 +18,9 @@ class TransactionResponse(TransactionCreate):
     id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TransactionUpdate(BaseModel):
+    amount: float | None = Field(default=None, gt=0)
+    transaction_type: TransactionType | None = None
+    purpose: str | None = Field(default=None, min_length=1, max_length=200)
