@@ -56,3 +56,5 @@ class TransactionRepository:
 
         await self.session.delete(result)
         await self.session.commit()
+
+        return result

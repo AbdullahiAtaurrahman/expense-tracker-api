@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -70,11 +70,16 @@ async def get_transaction_by_id(
     return transaction
 
 
-@router.delete("/transactions/{transaction_id}")
+@router.delete("/transactions/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_transaction(
     transaction_id: int, service: TransactionService = Depends(get_transaction_service)
 ):
     transaction = await service.delete_transaction(transaction_id)
 
     if transaction is None:
-        raise HTTPException(status_code=202, detail=f"No Content")
+        raise HTTPException(
+            status_code=status.HTTP_NO_CONTENT,
+            detail=f"Transaction with ID {transaction_id} not found",
+        )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
