@@ -46,3 +46,13 @@ class TransactionRepository:
         )
 
         return result.scalar_one_or_none()
+
+    async def delete_transaction(self, transaction_id: int) -> Transaction | None:
+
+        result = await self.get_transaction_by_id(transaction_id)
+
+        if result is None:
+            return None
+
+        await self.session.delete(result)
+        await self.session.commit()

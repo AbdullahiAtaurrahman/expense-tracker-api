@@ -22,3 +22,6 @@ class TransactionService:
 
     async def get_transaction_by_id(self, transaction_id: id) -> Transaction | None:
         return await self.repository.get_transaction_by_id(transaction_id)
+
+    async def delete_transaction(self, transaction_id: id) -> Transaction | None:
+        return await self.repository.delete_transaction(transaction_id)
