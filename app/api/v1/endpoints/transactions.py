@@ -78,7 +78,7 @@ async def delete_transaction(
 
     if transaction is None:
         raise HTTPException(
-            status_code=status.HTTP_NO_CONTENT,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Transaction with ID {transaction_id} not found",
         )
 
