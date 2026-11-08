@@ -14,10 +14,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL is not set in the .env file")
+if not TEST_DATABASE_URL:
+    raise ValueError("TEST_DATABASE_URL is not set in the .env file")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -38,6 +38,14 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+
+test_database_url = os.getenv("TEST_DATABASE_URL")
+
+if not test_database_url:
+    raise ValueError("TEST_DATABASE_URL is not set")
+
+config.set_main_option("sqlalchemy.url", test_database_url.replace("%", "%%"))
 
 
 def run_migrations_offline() -> None:
@@ -78,7 +86,7 @@ async def run_async_migrations() -> None:
     """
 
     connectable = create_async_engine(
-        DATABASE_URL,
+        TEST_DATABASE_URL,
         poolclass=pool.NullPool,
     )
 

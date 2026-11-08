@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
+from sqlalchemy.pool import NullPool
+
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -26,6 +28,15 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
+
+def create_test_engine():
+    test_database_url = os.getenv("TEST_DATABASE_URL")
+
+    if not test_database_url:
+        raise ValueError("TEST_DATABASE_URL is not set")
+
+    return create_async_engine(test_database_url, echo=True, poolclass=NullPool)
 
 
 class Base(DeclarativeBase):
