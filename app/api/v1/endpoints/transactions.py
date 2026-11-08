@@ -24,10 +24,15 @@ def home():
     return {"message": "Welcome to the Expense Tracker API"}
 
 
-@router.post("/transactions", response_model=TransactionResponse)
+@router.post(
+    "/transactions",
+    response_model=TransactionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_transaction(
     transaction: TransactionCreate,
     service: TransactionService = Depends(get_transaction_service),
+    status_code=status.HTTP_202_ACCEPTED,
 ):
     return await service.create_transaction(transaction.model_dump(mode="json"))
 
@@ -35,6 +40,7 @@ async def create_transaction(
 @router.get("/transactions", response_model=list[TransactionResponse])
 async def get_transactions(
     service: TransactionService = Depends(get_transaction_service),
+    status_code=status.HTTP_200_OK,
 ):
     return await service.get_transactions()
 
