@@ -57,6 +57,27 @@ def test_get_transactions(client):
     assert isinstance(response.json(), list)
 
 
+def test_get_transaction_by_id(client):
+
+    create_response = client.post(
+        "/api/v1/transactions",
+        json={
+            "amount": 1500,
+            "transaction_type": "income",
+            "purpose": "Freelance project",
+        },
+    )
+
+    transaction_id = create_response.json()["id"]
+
+    response = client.get(f"/api/v1/transactions/{transaction_id}")
+
+    assert response.status_code == 200
+    assert create_response.json()["id"] == transaction_id
+    assert create_response.json()["transaction_type"] == "income"
+    assert create_response.json()["purpose"] == "Freelance project"
+
+
 def test_create_transaction(client):
     response = client.post(
         "/api/v1/transactions",
