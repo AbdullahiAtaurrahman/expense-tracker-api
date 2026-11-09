@@ -45,7 +45,11 @@ async def get_transactions(
     return await service.get_transactions()
 
 
-@router.patch("transactions/{transaction_id}", response_model=TransactionResponse)
+@router.patch(
+    "/transactions/{transaction_id}",
+    response_model=TransactionResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def update_transaction(
     transaction_id: int,
     transaction_data: TransactionUpdate,
