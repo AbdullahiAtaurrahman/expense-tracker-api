@@ -8,19 +8,26 @@ from sqlalchemy.ext.asyncio import async_engine_from_config, create_async_engine
 
 from app.database import Base
 from app.models.transaction import Transaction
+from app.models.user import User
+
 
 from alembic import context
 from dotenv import load_dotenv
 
 load_dotenv()
 
-TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+# TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-if not TEST_DATABASE_URL:
-    raise ValueError("TEST_DATABASE_URL is not set in the .env file")
+# if not TEST_DATABASE_URL:
+#     raise ValueError("TEST_DATABASE_URL is not set in the .env file")
+
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL is not set in the .env file")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+# config = context.config
 config = context.config
 
 # Interpret the config file for Python logging.
@@ -40,12 +47,12 @@ target_metadata = Base.metadata
 # ... etc.
 
 
-test_database_url = os.getenv("TEST_DATABASE_URL")
+# test_database_url = os.getenv("TEST_DATABASE_URL")
 
-if not test_database_url:
-    raise ValueError("TEST_DATABASE_URL is not set")
+# if not test_database_url:
+#     raise ValueError("TEST_DATABASE_URL is not set")
 
-config.set_main_option("sqlalchemy.url", test_database_url.replace("%", "%%"))
+config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
 
 
 def run_migrations_offline() -> None:
@@ -86,7 +93,7 @@ async def run_async_migrations() -> None:
     """
 
     connectable = create_async_engine(
-        TEST_DATABASE_URL,
+        DATABASE_URL,
         poolclass=pool.NullPool,
     )
 
