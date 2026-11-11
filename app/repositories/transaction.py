@@ -8,9 +8,11 @@ class TransactionRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_transaction(self, transaction_data: dict) -> Transaction:
+    async def create_transaction(
+        self, transaction_data: dict, user_id: int
+    ) -> Transaction:
 
-        transaction = Transaction(**transaction_data)
+        transaction = Transaction(**transaction_data, user_id=user_id)
 
         self.session.add(transaction)
         await self.session.commit()
@@ -19,10 +21,10 @@ class TransactionRepository:
         return transaction
 
     async def update_transaction(
-        self, transaction_id: int, transaction_data: dict
+        self, transaction_id: int, transaction_data: dict, user_id: int
     ) -> Transaction | None:
 
-        transaction = await self.get_transaction_by_id(transaction_id)
+        transaction = await self.get_transaction_by_id(transaction_id, user_id)
 
         if transaction is None:
             return None
@@ -35,21 +37,29 @@ class TransactionRepository:
 
         return transaction
 
-    async def get_transactions(self) -> list[Transaction]:
-        result = await self.session.execute(select(Transaction))
+    async def get_transactions(self, user_id: int) -> list[Transaction]:
+        result = await self.session.execute(
+            select(Transaction).where(Transaction.user_id == user_id)
+        )
 
         return list(result.scalars().all())
 
-    async def get_transaction_by_id(self, transaction_id: int) -> Transaction | None:
+    async def get_transaction_by_id(
+        self, transaction_id: int, user_id: int
+    ) -> Transaction | None:
         result = await self.session.execute(
-            select(Transaction).where(Transaction.id == transaction_id)
+            select(Transaction).where(
+                Transaction.id == transaction_id, Transaction.user_id == user_id
+            )
         )
 
         return result.scalar_one_or_none()
 
-    async def delete_transaction(self, transaction_id: int) -> Transaction | None:
+    async def delete_transaction(
+        self, transaction_id: int, user_id: int
+    ) -> Transaction | None:
 
-        result = await self.get_transaction_by_id(transaction_id)
+        result = await self.get_transaction_by_id(transaction_id, user_id)
 
         if result is None:
             return None
