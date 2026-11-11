@@ -29,3 +29,8 @@ class UserRepository:
         await self.session.refresh(user)
 
         return user
+
+    async def get_user_by_id(self, user_id: int) -> User | None:
+        result = await self.session.execute(select(User).where(user_id == User.id))
+
+        return result.scalar_one_or_none()

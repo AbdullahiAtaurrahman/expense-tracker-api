@@ -1,8 +1,13 @@
 import os
 from datetime import datetime, timedelta, timezone
+from fastapi.security import OAuth2PasswordBearer
+
+from dotenv import load_dotenv
+import jwt
+from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
-import jwt
+load_dotenv()
 
 password_hash = PasswordHash.recommended()
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -11,6 +16,7 @@ if not SECRET_KEY:
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 def hash_password(password: str) -> str:
@@ -47,3 +53,13 @@ def create_access_token(
     )
 
     return encoded_jwt
+
+
+def decode_access_token(token: str) -> dict | None:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        return payload
+
+    except InvalidTokenError:
+        return None
