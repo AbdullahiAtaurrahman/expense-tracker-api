@@ -1,53 +1,4 @@
-import pytest
-import asyncio
-from fastapi.testclient import TestClient
 from fastapi import status
-from main import app
-
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy import delete
-
-from app.models.transaction import Transaction
-from app.database import create_test_engine, get_db
-
-test_engine = create_test_engine()
-
-TestingSessionLocal = async_sessionmaker(
-    bind=test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
-
-
-@pytest.fixture(scope="module")
-def client():
-    with TestClient(app) as test_client:
-        yield test_client
-
-
-@pytest.fixture(autouse=True)
-def clean_database():
-    # Clean before the test
-    asyncio.run(clear_test_database())
-
-    yield
-
-    # Clean after the test
-    asyncio.run(clear_test_database())
-
-
-async def override_get_db():
-    async with TestingSessionLocal() as session:
-        yield session
-
-
-app.dependency_overrides[get_db] = override_get_db
-
-
-async def clear_test_database():
-    async with TestingSessionLocal() as session:
-        await session.execute(delete(Transaction))
-        await session.commit()
 
 
 def test_get_transactions(client):
@@ -296,3 +247,88 @@ def test_nonexistent_transaction(client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Transaction with ID 99999 not found"
+
+
+def test_users_cannot_see_each_others_transactions(client, second_client):
+    create_response = client.post(
+        "/api/v1/transactions",
+        json={
+            "amount": 1500,
+            "transaction_type": "income",
+            "purpose": "User A transaction",
+        },
+    )
+
+    assert create_response.status_code == 201
+
+    response = second_client.get("/api/v1/transactions")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_user_cannot_access_another_users_transaction(client, second_client):
+    create_response = client.post(
+        "/api/v1/transactions",
+        json={
+            "amount": 1500,
+            "transaction_type": "income",
+            "purpose": "User A transaction",
+        },
+    )
+
+    transaction_id = create_response.json()["id"]
+
+    response = second_client.get(f"/api/v1/transactions/{transaction_id}")
+
+    assert response.status_code == 404
+
+
+def test_user_cannot_update_another_users_transaction(client, second_client):
+    create_response = client.post(
+        "/api/v1/transactions",
+        json={
+            "amount": 1500,
+            "transaction_type": "income",
+            "purpose": "Original purpose",
+        },
+    )
+
+    transaction_id = create_response.json()["id"]
+
+    response = second_client.patch(
+        f"/api/v1/transactions/{transaction_id}",
+        json={
+            "amount": 5000,
+            "purpose": "Unauthorized update",
+        },
+    )
+
+    assert response.status_code == 404
+
+    original_response = client.get(f"/api/v1/transactions/{transaction_id}")
+
+    assert original_response.status_code == 200
+    assert original_response.json()["amount"] == 1500
+    assert original_response.json()["purpose"] == "Original purpose"
+
+
+def test_user_cannot_delete_another_users_transaction(client, second_client):
+    create_response = client.post(
+        "/api/v1/transactions",
+        json={
+            "amount": 1500,
+            "transaction_type": "expense",
+            "purpose": "User A subscription",
+        },
+    )
+
+    transaction_id = create_response.json()["id"]
+
+    response = second_client.delete(f"/api/v1/transactions/{transaction_id}")
+
+    assert response.status_code == 404
+
+    original_response = client.get(f"/api/v1/transactions/{transaction_id}")
+
+    assert original_response.status_code == 200

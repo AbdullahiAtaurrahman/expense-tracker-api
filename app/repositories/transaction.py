@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.transaction import Transaction
+from app.schemas.transaction import TransactionType
 
 
 class TransactionRepository:
@@ -37,12 +38,18 @@ class TransactionRepository:
 
         return transaction
 
-    async def get_transactions(self, user_id: int) -> list[Transaction]:
-        result = await self.session.execute(
-            select(Transaction).where(Transaction.user_id == user_id)
-        )
+    async def get_transactions(
+        self, user_id: int, transaction_type: TransactionType | None = None
+    ) -> list[Transaction]:
 
-        return list(result.scalars().all())
+        query = select(Transaction).where(Transaction.user_id == user_id)
+
+        if transaction_type is not None:
+            query = query.where(Transaction.transaction_type == transaction_type)
+
+        result = await self.session.execute(query)
+
+        return result.scalars().all()
 
     async def get_transaction_by_id(
         self, transaction_id: int, user_id: int

@@ -25,6 +25,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set in the .env file")
 
+MIGRATION_DATABASE_URL = os.getenv("ALEMBIC_DATABASE_URL") or DATABASE_URL
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 # config = context.config
@@ -52,7 +53,7 @@ target_metadata = Base.metadata
 # if not test_database_url:
 #     raise ValueError("TEST_DATABASE_URL is not set")
 
-config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
+config.set_main_option("sqlalchemy.url", MIGRATION_DATABASE_URL.replace("%", "%%"))
 
 
 def run_migrations_offline() -> None:
@@ -93,7 +94,7 @@ async def run_async_migrations() -> None:
     """
 
     connectable = create_async_engine(
-        DATABASE_URL,
+        MIGRATION_DATABASE_URL,
         poolclass=pool.NullPool,
     )
 

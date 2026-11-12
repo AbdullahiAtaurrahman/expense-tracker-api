@@ -1,17 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import float, ForeignKey, Integer, String
-
 
 from app.api.dependencies import get_current_user
 
 from app.database import get_db
-from app.models.transaction import Transaction
 from app.models.user import User
 
 
-from app.schemas.transaction import TransactionCreate, TransactionResponse
-from app.schemas.transaction import TransactionUpdate
+from app.schemas.transaction import (
+    TransactionCreate,
+    TransactionResponse,
+    TransactionUpdate,
+    TransactionType,
+    TransactionResponse,
+)
 from app.repositories.transaction import TransactionRepository
 from app.services.transaction import TransactionService
 
@@ -20,7 +22,6 @@ router = APIRouter()
 
 def get_transaction_service(
     session: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ) -> TransactionService:
     repository = TransactionRepository(session)
     return TransactionService(repository)
@@ -39,19 +40,25 @@ def home():
 async def create_transaction(
     transaction: TransactionCreate,
     service: TransactionService = Depends(get_transaction_service),
-    status_code=status.HTTP_202_ACCEPTED,
     current_user: User = Depends(get_current_user),
 ):
-    return await service.create_transaction(transaction.model_dump(mode="json"))
+    return await service.create_transaction(
+        transaction.model_dump(mode="json"), current_user.id
+    )
 
 
 @router.get("/transactions", response_model=list[TransactionResponse])
 async def get_transactions(
-    service: TransactionService = Depends(get_transaction_service),
-    status_code=status.HTTP_200_OK,
+    transaction_type: TransactionType | None = None,
+    session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.get_transactions()
+
+    service = TransactionService(session)
+
+    return await service.get_transactions(
+        user_id=current_user.id, transaction_type=transaction_type
+    )
 
 
 @router.patch(
@@ -65,7 +72,9 @@ async def update_transaction(
     current_user: User = Depends(get_current_user),
     service: TransactionService = Depends(get_transaction_service),
 ):
-    transaction = await service.update_transaction(transaction_id, transaction_data)
+    transaction = await service.update_transaction(
+        transaction_id, transaction_data, current_user.id
+    )
 
     if transaction is None:
         raise HTTPException(
@@ -81,7 +90,7 @@ async def get_transaction_by_id(
     service: TransactionService = Depends(get_transaction_service),
     current_user: User = Depends(get_current_user),
 ):
-    transaction = await service.get_transaction_by_id(transaction_id)
+    transaction = await service.get_transaction_by_id(transaction_id, current_user.id)
 
     if transaction is None:
         raise HTTPException(
@@ -97,7 +106,7 @@ async def delete_transaction(
     service: TransactionService = Depends(get_transaction_service),
     current_user: User = Depends(get_current_user),
 ):
-    transaction = await service.delete_transaction(transaction_id)
+    transaction = await service.delete_transaction(transaction_id, current_user.id)
 
     if transaction is None:
         raise HTTPException(
