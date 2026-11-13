@@ -332,3 +332,55 @@ def test_user_cannot_delete_another_users_transaction(client, second_client):
     original_response = client.get(f"/api/v1/transactions/{transaction_id}")
 
     assert original_response.status_code == 200
+
+
+def test_filter_income_transactions(client):
+    client.post(
+        "/api/v1/transactions",
+        json={
+            "amount": 5000,
+            "transaction_type": "income",
+            "purpose": "Salary",
+        },
+    )
+
+    client.post(
+        "/api/v1/transactions",
+        json={
+            "amount": 2000,
+            "transaction_type": "expense",
+            "purpose": "Groceries",
+        },
+    )
+
+    response = client.get("/api/v1/transactions?transaction_type=income")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["transaction_type"] == "income"
+
+
+def test_filter_expense_transactions(client):
+    client.post(
+        "/api/v1/transactions",
+        json={
+            "amount": 5000,
+            "transaction_type": "income",
+            "purpose": "Salary",
+        },
+    )
+
+    client.post(
+        "/api/v1/transactions",
+        json={
+            "amount": 2000,
+            "transaction_type": "expense",
+            "purpose": "Groceries",
+        },
+    )
+
+    response = client.get("/api/v1/transactions?transaction_type=expense")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["transaction_type"] == "expense"

@@ -23,8 +23,7 @@ router = APIRouter()
 def get_transaction_service(
     session: AsyncSession = Depends(get_db),
 ) -> TransactionService:
-    repository = TransactionRepository(session)
-    return TransactionService(repository)
+    return TransactionService(session)
 
 
 @router.get("/")

@@ -3,10 +3,12 @@ from app.models.transaction import Transaction
 from app.schemas.transaction import TransactionUpdate
 from app.schemas.transaction import TransactionType
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 class TransactionService:
-    def __init__(self, repository: TransactionRepository):
-        self.repository = repository
+    def __init__(self, session: AsyncSession):
+        self.repository = TransactionRepository(session)
 
     async def create_transaction(
         self, transaction_data: dict, user_id: int
