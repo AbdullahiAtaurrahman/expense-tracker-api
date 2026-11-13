@@ -24,6 +24,8 @@ def test_get_transaction_by_id(client):
     response = client.get(f"/api/v1/transactions/{transaction_id}")
 
     assert response.status_code == 200
+    assert "created_at" in response.json()
+    assert "updated_at" in response.json()
     assert create_response.json()["id"] == transaction_id
     assert create_response.json()["transaction_type"] == "income"
     assert create_response.json()["purpose"] == "Freelance project"
@@ -40,6 +42,8 @@ def test_create_transaction(client):
     )
 
     assert response.status_code == 201
+    assert "created_at" in response.json()
+    assert "updated_at" in response.json()
 
     assert "id" in response.json()
 
@@ -384,3 +388,239 @@ def test_filter_expense_transactions(client):
     assert response.status_code == 200
     assert len(response.json()) == 1
     assert response.json()[0]["transaction_type"] == "expense"
+
+
+def test_filter_transactions_by_start_date(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"start_date": "2026-11-01T00:00:00"},
+    )
+
+    assert response.status_code == 200
+
+    for transaction in response.json():
+        assert transaction["created_at"] >= "2026-11-01T00:00:00"
+
+
+def test_filter_transactions_by_end_date(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"end_date": "2026-11-13T23:59:59"},
+    )
+
+    assert response.status_code == 200
+
+    for transaction in response.json():
+        assert transaction["created_at"] <= "2026-11-13T23:59:59"
+
+
+def test_filter_transactions_by_date_range(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={
+            "start_date": "2026-11-01T00:00:00",
+            "end_date": "2026-11-13T23:59:59",
+        },
+    )
+
+    assert response.status_code == 200
+
+    for transaction in response.json():
+        assert "2026-11-01T00:00:00" <= transaction["created_at"]
+        assert transaction["created_at"] <= "2026-11-13T23:59:59"
+
+
+def test_filter_transactions_by_date_and_type(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={
+            "transaction_type": "expense",
+            "start_date": "2026-11-01T00:00:00",
+            "end_date": "2026-11-13T23:59:59",
+        },
+    )
+
+    assert response.status_code == 200
+
+    for transaction in response.json():
+        assert transaction["transaction_type"] == "expense"
+        assert "2026-11-01T00:00:00" <= transaction["created_at"]
+        assert transaction["created_at"] <= "2026-11-13T23:59:59"
+
+
+def test_transactions_outside_date_range_are_excluded(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={
+            "start_date": "2030-01-01T00:00:00",
+            "end_date": "2030-01-02T00:00:00",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_filter_transactions_with_invalid_date(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"start_date": "invalid-date"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_filter_transactions_with_invalid_type(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"transaction_type": "invalid"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_transactions_with_default_pagination(client):
+    response = client.get("/api/v1/transactions")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+    assert len(response.json()) <= 10
+
+
+def test_get_transactions_with_limit(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"limit": 5},
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) <= 5
+
+
+def test_get_transactions_with_skip(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"skip": 5},
+    )
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_get_transactions_with_skip_and_limit(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={
+            "skip": 5,
+            "limit": 5,
+        },
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) <= 5
+
+
+def test_get_transactions_with_maximum_limit(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"limit": 100},
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) <= 100
+
+
+def test_get_transactions_with_zero_skip(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"skip": 0},
+    )
+
+    assert response.status_code == 200
+
+
+def test_get_transactions_with_negative_skip(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"skip": -1},
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_transactions_with_zero_limit(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"limit": 0},
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_transactions_with_negative_limit(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"limit": -5},
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_transactions_with_limit_above_maximum(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={"limit": 101},
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_transactions_with_pagination_and_type_filter(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={
+            "transaction_type": "expense",
+            "skip": 0,
+            "limit": 5,
+        },
+    )
+
+    assert response.status_code == 200
+
+    for transaction in response.json():
+        assert transaction["transaction_type"] == "expense"
+
+
+def test_get_transactions_with_pagination_and_sorting(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={
+            "sort_by": "amount",
+            "order": "asc",
+            "skip": 0,
+            "limit": 5,
+        },
+    )
+
+    assert response.status_code == 200
+
+    transactions = response.json()
+
+    assert len(transactions) <= 5
+
+    amounts = [transaction["amount"] for transaction in transactions]
+
+    assert amounts == sorted(amounts)
+
+
+def test_get_transactions_with_large_skip(client):
+    response = client.get(
+        "/api/v1/transactions",
+        params={
+            "skip": 100000,
+            "limit": 10,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []

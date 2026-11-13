@@ -1,4 +1,5 @@
 from enum import Enum
+from datetime import datetime
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -16,6 +17,8 @@ class TransactionCreate(BaseModel):
 
 class TransactionResponse(TransactionCreate):
     id: int
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

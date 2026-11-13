@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.transaction import Transaction
 from app.schemas.transaction import TransactionType
 
+from datetime import datetime
+
 
 class TransactionRepository:
     def __init__(self, session: AsyncSession):
@@ -39,13 +41,41 @@ class TransactionRepository:
         return transaction
 
     async def get_transactions(
-        self, user_id: int, transaction_type: TransactionType | None = None
+        self,
+        user_id: int,
+        transaction_type: TransactionType | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        sort_by: str = "created_at",
+        order: str = "desc",
+        skip: int = 0,
+        limit: int = 10,
     ) -> list[Transaction]:
 
         query = select(Transaction).where(Transaction.user_id == user_id)
 
         if transaction_type is not None:
             query = query.where(Transaction.transaction_type == transaction_type)
+
+        if start_date is not None:
+            query = query.where(Transaction.created_at >= start_date)
+
+        if end_date is not None:
+            query = query.where(Transaction.created_at <= end_date)
+
+        sort_columns = {
+            "created_at": Transaction.created_at,
+            "amount": Transaction.amount,
+        }
+
+        sort_column = sort_columns.get(sort_by, Transaction.created_at)
+
+        if order == "asc":
+            query = query.order_by(sort_column.asc())
+        else:
+            query = query.order_by(sort_column.desc())
+
+        query = query.offset(skip).limit(limit)
 
         result = await self.session.execute(query)
 

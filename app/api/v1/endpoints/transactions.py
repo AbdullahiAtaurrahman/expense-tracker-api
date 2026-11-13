@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
 
 from app.database import get_db
 from app.models.user import User
+
+from datetime import datetime
 
 
 from app.schemas.transaction import (
@@ -49,6 +51,12 @@ async def create_transaction(
 @router.get("/transactions", response_model=list[TransactionResponse])
 async def get_transactions(
     transaction_type: TransactionType | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    sort_by: str = "created_at",
+    order: str = "desc",
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=10, ge=1, le=100),
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -56,7 +64,14 @@ async def get_transactions(
     service = TransactionService(session)
 
     return await service.get_transactions(
-        user_id=current_user.id, transaction_type=transaction_type
+        user_id=current_user.id,
+        transaction_type=transaction_type,
+        start_date=start_date,
+        end_date=end_date,
+        sort_by=sort_by,
+        order=order,
+        skip=skip,
+        limit=limit,
     )
 
 

@@ -5,6 +5,8 @@ from app.schemas.transaction import TransactionType
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from datetime import datetime
+
 
 class TransactionService:
     def __init__(self, session: AsyncSession):
@@ -16,10 +18,25 @@ class TransactionService:
         return await self.repository.create_transaction(transaction_data, user_id)
 
     async def get_transactions(
-        self, user_id: int, transaction_type: TransactionType | None = None
-    ) -> list[Transaction]:
+        self,
+        user_id: int,
+        transaction_type: TransactionType | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        sort_by: str = "created_at",
+        order: str = "desc",
+        skip: int = 0,
+        limit: int = 10,
+    ):
         return await self.repository.get_transactions(
-            user_id=user_id, transaction_type=transaction_type
+            user_id=user_id,
+            transaction_type=transaction_type,
+            start_date=start_date,
+            end_date=end_date,
+            sort_by=sort_by,
+            order=order,
+            skip=skip,
+            limit=limit,
         )
 
     async def update_transaction(
