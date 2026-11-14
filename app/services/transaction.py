@@ -84,3 +84,16 @@ class TransactionService:
             start_date=start_date,
             end_date=end_date,
         )
+
+    async def get_category_spending(
+        self,
+        user_id: int,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ):
+
+        return await self.repository.get_category_spending(
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+        )

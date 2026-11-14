@@ -13,6 +13,7 @@ class Transaction(Base):
     )
     amount = Column(Float, nullable=False)
     transaction_type = Column(String, nullable=False)
+    category = Column(String(100), nullable=True, index=True)
     purpose = Column(String(200), nullable=False)
 
     created_at = Column(

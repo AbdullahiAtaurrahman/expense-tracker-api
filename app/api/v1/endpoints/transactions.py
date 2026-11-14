@@ -17,6 +17,7 @@ from app.schemas.transaction import (
     TransactionResponse,
     TransactionSummary,
     MonthlyTransactionSummary,
+    CategorySpendingSummary,
 )
 from app.repositories.transaction import TransactionRepository
 from app.services.transaction import TransactionService
@@ -128,6 +129,29 @@ async def get_monthly_analytics(
     current_user: User = Depends(get_current_user),
 ):
     return await service.get_monthly_analytics(
+        user_id=current_user.id,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+
+@router.get(
+    "/transactions/analytics/categories",
+    response_model=list[CategorySpendingSummary],
+)
+async def get_category_spending(
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    service: TransactionService = Depends(get_transaction_service),
+    current_user: User = Depends(get_current_user),
+):
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(
+            status_code=422,
+            detail="start_date must be before or equal to end_date",
+        )
+
+    return await service.get_category_spending(
         user_id=current_user.id,
         start_date=start_date,
         end_date=end_date,

@@ -251,3 +251,57 @@ class TransactionRepository:
             )
 
         return analytics
+
+    async def get_category_spending(
+        self,
+        user_id: int,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[dict]:
+
+        category_column = func.coalesce(
+            Transaction.category,
+            "Uncategorized",
+        )
+
+        query = select(
+            category_column.label("category"),
+            func.sum(Transaction.amount).label("total_spent"),
+            func.count(Transaction.id).label("transaction_count"),
+        ).where(
+            Transaction.user_id == user_id,
+            Transaction.transaction_type == "expense",
+        )
+
+        if start_date is not None:
+            query = query.where(Transaction.created_at >= start_date)
+
+        if end_date is not None:
+            query = query.where(Transaction.created_at <= end_date)
+
+        query = query.group_by(category_column).order_by(
+            func.sum(Transaction.amount).desc()
+        )
+
+        result = await self.session.execute(query)
+        rows = result.all()
+
+        total_expenses = sum(float(row.total_spent) for row in rows)
+
+        analytics = []
+
+        for row in rows:
+            amount = float(row.total_spent)
+
+            percentage = (amount / total_expenses) * 100 if total_expenses > 0 else 0
+
+            analytics.append(
+                {
+                    "category": row.category,
+                    "total_spent": amount,
+                    "transaction_count": row.transaction_count,
+                    "percentage": percentage,
+                }
+            )
+
+        return analytics

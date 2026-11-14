@@ -807,3 +807,91 @@ def test_monthly_analytics_with_empty_date_range(client):
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_get_category_spending(client):
+    response = client.get("/api/v1/transactions/analytics/categories")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_category_spending_response_structure(client):
+    response = client.get("/api/v1/transactions/analytics/categories")
+
+    assert response.status_code == 200
+
+    for category in response.json():
+        assert "category" in category
+        assert "total_spent" in category
+        assert "transaction_count" in category
+        assert "percentage" in category
+
+
+def test_category_spending_contains_valid_values(client):
+    response = client.get("/api/v1/transactions/analytics/categories")
+
+    assert response.status_code == 200
+
+    for category in response.json():
+        assert category["total_spent"] >= 0
+        assert category["transaction_count"] >= 0
+        assert 0 <= category["percentage"] <= 100
+
+
+def test_category_spending_is_ordered_by_amount(client):
+    response = client.get("/api/v1/transactions/analytics/categories")
+
+    assert response.status_code == 200
+
+    amounts = [item["total_spent"] for item in response.json()]
+
+    assert amounts == sorted(amounts, reverse=True)
+
+
+def test_category_spending_with_date_range(client):
+    response = client.get(
+        "/api/v1/transactions/analytics/categories",
+        params={
+            "start_date": "2026-11-01T00:00:00",
+            "end_date": "2026-11-30T23:59:59",
+        },
+    )
+
+    assert response.status_code == 200
+
+
+def test_category_spending_with_invalid_date(client):
+    response = client.get(
+        "/api/v1/transactions/analytics/categories",
+        params={
+            "start_date": "invalid-date",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_category_spending_with_invalid_date_range(client):
+    response = client.get(
+        "/api/v1/transactions/analytics/categories",
+        params={
+            "start_date": "2026-11-30T00:00:00",
+            "end_date": "2026-11-01T00:00:00",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_category_spending_empty_date_range(client):
+    response = client.get(
+        "/api/v1/transactions/analytics/categories",
+        params={
+            "start_date": "2030-01-01T00:00:00",
+            "end_date": "2030-01-02T00:00:00",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []
