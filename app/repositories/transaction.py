@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.transaction import Transaction
@@ -105,3 +105,74 @@ class TransactionRepository:
         await self.session.commit()
 
         return result
+
+    async def get_transaction_summary(
+        self,
+        user_id: int,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict:
+
+        total_income = func.coalesce(
+            func.sum(
+                case(
+                    (Transaction.transaction_type == "income", Transaction.amount),
+                    else_=0,
+                )
+            ),
+            0,
+        )
+
+        total_expenses = func.coalesce(
+            func.sum(
+                case(
+                    (Transaction.transaction_type == "expense", Transaction.amount),
+                    else_=0,
+                )
+            ),
+            0,
+        )
+
+        income_transactions = func.count(
+            case(
+                (Transaction.transaction_type == "income", 1),
+                else_=None,
+            )
+        )
+
+        expense_transactions = func.count(
+            case(
+                (Transaction.transaction_type == "expense", 1),
+                else_=None,
+            )
+        )
+
+        query = select(
+            total_income.label("total_income"),
+            total_expenses.label("total_expenses"),
+            func.count(Transaction.id).label("total_transactions"),
+            income_transactions.label("income_transactions"),
+            expense_transactions.label("expense_transactions"),
+        ).where(Transaction.user_id == user_id)
+
+        if start_date is not None:
+            query = query.where(Transaction.created_at >= start_date)
+
+        if end_date is not None:
+            query = query.where(Transaction.created_at <= end_date)
+
+        result = await self.session.execute(query)
+
+        summary = result.one()
+
+        income = float(summary.total_income)
+        expenses = float(summary.total_expenses)
+
+        return {
+            "total_income": income,
+            "total_expenses": expenses,
+            "balance": income - expenses,
+            "total_transactions": summary.total_transactions,
+            "income_transactions": summary.income_transactions,
+            "expense_transactions": summary.expense_transactions,
+        }

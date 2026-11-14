@@ -15,6 +15,7 @@ from app.schemas.transaction import (
     TransactionUpdate,
     TransactionType,
     TransactionResponse,
+    TransactionSummary,
 )
 from app.repositories.transaction import TransactionRepository
 from app.services.transaction import TransactionService
@@ -96,6 +97,23 @@ async def update_transaction(
         )
 
     return transaction
+
+
+@router.get(
+    "/transactions/summary",
+    response_model=TransactionSummary,
+)
+async def get_transaction_summary(
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    service: TransactionService = Depends(get_transaction_service),
+    current_user: User = Depends(get_current_user),
+):
+    return await service.get_transaction_summary(
+        user_id=current_user.id,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 
 @router.get("/transactions/{transaction_id}", response_model=TransactionResponse)

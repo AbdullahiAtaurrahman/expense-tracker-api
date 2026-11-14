@@ -60,3 +60,15 @@ class TransactionService:
         self, transaction_id: int, user_id: int
     ) -> Transaction | None:
         return await self.repository.delete_transaction(transaction_id, user_id)
+
+    async def get_transaction_summary(
+        self,
+        user_id: int,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ):
+        return await self.repository.get_transaction_summary(
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+        )

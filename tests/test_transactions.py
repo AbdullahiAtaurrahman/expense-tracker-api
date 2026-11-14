@@ -624,3 +624,95 @@ def test_get_transactions_with_large_skip(client):
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_get_transaction_summary(client):
+    response = client.get("/api/v1/transactions/summary")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "total_income" in data
+    assert "total_expenses" in data
+    assert "balance" in data
+    assert "total_transactions" in data
+    assert "income_transactions" in data
+    assert "expense_transactions" in data
+
+    assert data["balance"] == (data["total_income"] - data["total_expenses"])
+
+
+def test_transaction_summary_with_no_transactions(client):
+    future_start = "2030-01-01T00:00:00"
+    future_end = "2030-01-02T00:00:00"
+
+    response = client.get(
+        "/api/v1/transactions/summary",
+        params={
+            "start_date": future_start,
+            "end_date": future_end,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total_income"] == 0
+    assert data["total_expenses"] == 0
+    assert data["balance"] == 0
+    assert data["total_transactions"] == 0
+    assert data["income_transactions"] == 0
+    assert data["expense_transactions"] == 0
+
+
+def test_transaction_summary_with_date_range(client):
+    response = client.get(
+        "/api/v1/transactions/summary",
+        params={
+            "start_date": "2026-11-01T00:00:00",
+            "end_date": "2026-11-30T23:59:59",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total_income"] >= 0
+    assert data["total_expenses"] >= 0
+    assert data["total_transactions"] >= 0
+
+
+def test_transaction_summary_with_invalid_date(client):
+    response = client.get(
+        "/api/v1/transactions/summary",
+        params={"start_date": "invalid-date"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_transaction_summary_balance_calculation(client):
+    response = client.get("/api/v1/transactions/summary")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    expected_balance = data["total_income"] - data["total_expenses"]
+
+    assert data["balance"] == expected_balance
+
+
+def test_transaction_summary_transaction_counts(client):
+    response = client.get("/api/v1/transactions/summary")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total_transactions"] == (
+        data["income_transactions"] + data["expense_transactions"]
+    )
