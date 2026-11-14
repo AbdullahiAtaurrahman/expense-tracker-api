@@ -16,6 +16,7 @@ from app.schemas.transaction import (
     TransactionType,
     TransactionResponse,
     TransactionSummary,
+    MonthlyTransactionSummary,
 )
 from app.repositories.transaction import TransactionRepository
 from app.services.transaction import TransactionService
@@ -110,6 +111,23 @@ async def get_transaction_summary(
     current_user: User = Depends(get_current_user),
 ):
     return await service.get_transaction_summary(
+        user_id=current_user.id,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+
+@router.get(
+    "/transactions/analytics/monthly",
+    response_model=list[MonthlyTransactionSummary],
+)
+async def get_monthly_analytics(
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    service: TransactionService = Depends(get_transaction_service),
+    current_user: User = Depends(get_current_user),
+):
+    return await service.get_monthly_analytics(
         user_id=current_user.id,
         start_date=start_date,
         end_date=end_date,

@@ -716,3 +716,94 @@ def test_transaction_summary_transaction_counts(client):
     assert data["total_transactions"] == (
         data["income_transactions"] + data["expense_transactions"]
     )
+
+
+def test_get_monthly_analytics(client):
+    response = client.get("/api/v1/transactions/analytics/monthly")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_monthly_analytics_response_structure(client):
+    response = client.get("/api/v1/transactions/analytics/monthly")
+
+    assert response.status_code == 200
+
+    for month in response.json():
+        assert "month" in month
+        assert "total_income" in month
+        assert "total_expenses" in month
+        assert "balance" in month
+        assert "income_transactions" in month
+        assert "expense_transactions" in month
+        assert "total_transactions" in month
+
+
+def test_monthly_analytics_balance_calculation(client):
+    response = client.get("/api/v1/transactions/analytics/monthly")
+
+    assert response.status_code == 200
+
+    for month in response.json():
+        assert month["balance"] == (month["total_income"] - month["total_expenses"])
+
+
+def test_monthly_analytics_transaction_counts(client):
+    response = client.get("/api/v1/transactions/analytics/monthly")
+
+    assert response.status_code == 200
+
+    for month in response.json():
+        assert month["total_transactions"] == (
+            month["income_transactions"] + month["expense_transactions"]
+        )
+
+
+def test_monthly_analytics_chronological_order(client):
+    response = client.get("/api/v1/transactions/analytics/monthly")
+
+    assert response.status_code == 200
+
+    months = [month["month"] for month in response.json()]
+
+    assert months == sorted(months)
+
+
+def test_monthly_analytics_with_date_range(client):
+    response = client.get(
+        "/api/v1/transactions/analytics/monthly",
+        params={
+            "start_date": "2026-11-01T00:00:00",
+            "end_date": "2026-11-30T23:59:59",
+        },
+    )
+
+    assert response.status_code == 200
+
+    for month in response.json():
+        assert "2026-11" == month["month"]
+
+
+def test_monthly_analytics_with_invalid_date(client):
+    response = client.get(
+        "/api/v1/transactions/analytics/monthly",
+        params={
+            "start_date": "invalid-date",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_monthly_analytics_with_empty_date_range(client):
+    response = client.get(
+        "/api/v1/transactions/analytics/monthly",
+        params={
+            "start_date": "2030-01-01T00:00:00",
+            "end_date": "2030-01-02T00:00:00",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []

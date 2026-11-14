@@ -72,3 +72,15 @@ class TransactionService:
             start_date=start_date,
             end_date=end_date,
         )
+
+    async def get_monthly_analytics(
+        self,
+        user_id: int,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ):
+        return await self.repository.get_monthly_analytics(
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+        )

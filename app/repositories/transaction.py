@@ -176,3 +176,78 @@ class TransactionRepository:
             "income_transactions": summary.income_transactions,
             "expense_transactions": summary.expense_transactions,
         }
+
+    async def get_monthly_analytics(
+        self,
+        user_id: int,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list:
+        month_column = func.to_char(
+            func.date_trunc("month", Transaction.created_at), "YYYY-MM"
+        )
+
+        total_income = func.coalesce(
+            func.sum(
+                case(
+                    (Transaction.transaction_type == "income", Transaction.amount),
+                    else_=0,
+                )
+            )
+        )
+
+        total_expenses = func.coalesce(
+            func.sum(
+                case(
+                    (Transaction.transaction_type == "expense", Transaction.amount),
+                    else_=0,
+                )
+            )
+        )
+
+        income_transactions = func.count(
+            case((Transaction.transaction_type == "income", 1), else_=None)
+        )
+
+        expense_transactions = func.count(
+            case((Transaction.transaction_type == "expense", 1), else_=None)
+        )
+
+        query = select(
+            month_column.label("month"),
+            total_income.label("total_income"),
+            total_expenses.label("total_expenses"),
+            income_transactions.label("income_transactions"),
+            expense_transactions.label("expense_transactions"),
+            func.count(Transaction.id).label("total_transactions"),
+        ).where(Transaction.user_id == user_id)
+
+        if start_date is not None:
+            query = query.where(Transaction.created_at >= start_date)
+
+        if end_date is not None:
+            query = query.where(Transaction.created_at <= end_date)
+
+        query = query.group_by(month_column).order_by(month_column.asc())
+
+        result = await self.session.execute(query)
+
+        analytics = []
+
+        for row in result:
+            income = float(row.total_income)
+            expenses = float(row.total_expenses)
+
+            analytics.append(
+                {
+                    "month": row.month,
+                    "total_income": income,
+                    "total_expenses": expenses,
+                    "balance": income - expenses,
+                    "income_transactions": row.income_transactions,
+                    "expense_transactions": row.expense_transactions,
+                    "total_transactions": row.total_transactions,
+                }
+            )
+
+        return analytics
