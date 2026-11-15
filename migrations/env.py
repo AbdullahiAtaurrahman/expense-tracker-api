@@ -10,6 +10,7 @@ from app.database import Base
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.models.budget import Budget
+from app.models.recurring_transaction import RecurringTransaction
 
 
 from alembic import context
