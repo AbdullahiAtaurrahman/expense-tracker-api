@@ -64,7 +64,7 @@ class BudgetService:
         month: int | None = None,
         year: int | None = None,
     ):
-        now = datetime.now(timezone.utc + 1)
+        now = datetime.now(timezone.utc)
 
         month = month or now.month
         year = year or now.year

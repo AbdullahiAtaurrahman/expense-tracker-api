@@ -9,6 +9,7 @@ from main import app
 
 from app.database import create_test_engine, get_db
 from app.models.transaction import Transaction
+from app.models.budget import Budget
 from app.models.user import User
 from app.core.security import hash_password, create_access_token
 
@@ -32,6 +33,7 @@ app.dependency_overrides[get_db] = override_get_db
 async def clear_test_database():
     async with TestingSessionLocal() as session:
         await session.execute(delete(Transaction))
+        await session.execute(delete(Budget))
         await session.execute(delete(User))
         await session.commit()
 

@@ -51,7 +51,7 @@ class BudgetRepository:
         return result.scalar_one_or_none()
 
     async def update_budget(self, budget_id: int, budget_data, user_id: int):
-        budget = await self.session.get_budget_by_id(budget_id, user_id)
+        budget = await self.get_budget_by_id(budget_id, user_id)
 
         if not budget:
             return None
@@ -92,12 +92,12 @@ class BudgetRepository:
         month: int,
         year: int,
     ):
-        start_date = datetime(year, month, 1, tzinfo=timezone.utc + 1)
+        start_date = datetime(year, month, 1, tzinfo=timezone.utc)
 
         if month == 12:
-            end_date = datetime(year + 1, 1, 1, tzinfo=timezone.utc + 1)
+            end_date = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         else:
-            end_date = datetime(year, month + 1, 1, tzinfo=timezone.utc + 1)
+            end_date = datetime(year, month + 1, 1, tzinfo=timezone.utc)
 
         result = await self.session.execute(
             select(
