@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config, create_async_engine
 from app.database import Base
 from app.models.transaction import Transaction
 from app.models.user import User
+from app.models.budget import Budget
 
 
 from alembic import context
