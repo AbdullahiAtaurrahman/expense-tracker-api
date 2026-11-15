@@ -10,6 +10,7 @@ from main import app
 from app.database import create_test_engine, get_db
 from app.models.transaction import Transaction
 from app.models.budget import Budget
+from app.models.recurring_transaction import RecurringTransaction
 from app.models.user import User
 from app.core.security import hash_password, create_access_token
 
@@ -34,6 +35,7 @@ async def clear_test_database():
     async with TestingSessionLocal() as session:
         await session.execute(delete(Transaction))
         await session.execute(delete(Budget))
+        await session.execute(delete(RecurringTransaction))
         await session.execute(delete(User))
         await session.commit()
 

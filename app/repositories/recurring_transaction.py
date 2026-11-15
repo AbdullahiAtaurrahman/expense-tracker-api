@@ -22,7 +22,7 @@ class RecurringTransactionRepository:
 
         return transaction
 
-    async def et_recurring_transactions(self, user_id):
+    async def get_recurring_transactions(self, user_id):
         result = await self.session.execute(
             select(RecurringTransaction)
             .where(RecurringTransaction.user_id == user_id)
@@ -50,7 +50,9 @@ class RecurringTransactionRepository:
         self, transaction_id, transaction_data, user_id
     ):
 
-        transaction = self.get_recurring_transaction_by_id(transaction_id, user_id)
+        transaction = await self.get_recurring_transaction_by_id(
+            transaction_id, user_id
+        )
 
         if transaction is None:
             return None
@@ -66,7 +68,9 @@ class RecurringTransactionRepository:
         return transaction
 
     async def delete_recurring_transaction(self, transaction_id: int, user_id: int):
-        transaction = self.get_recurring_transaction_by_id(transaction_id, user_id)
+        transaction = await self.get_recurring_transaction_by_id(
+            transaction_id, user_id
+        )
 
         if transaction is None:
             return False
