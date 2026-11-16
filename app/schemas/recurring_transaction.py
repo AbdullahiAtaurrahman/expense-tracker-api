@@ -22,7 +22,7 @@ class RecurringTransactionCreate(BaseModel):
 
 
 class RecurringTransactionUpdate(BaseModel):
-    amount: float | None = Field(default=None, get=0)
+    amount: float | None = Field(default=None, gt=0)
 
     purpose: str | None = Field(default=None, min_length=1)
 
