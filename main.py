@@ -1,10 +1,13 @@
-from fastapi import FastAPI, Depends
-
+import logging
 from contextlib import asynccontextmanager
 
-from app.scheduler import start_scheduler, stop_scheduler
+from fastapi import FastAPI
 
+from app.database import engine
+from app.scheduler import start_scheduler, stop_scheduler
 from app.api.v1.router import router as v1_router
+
+logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager
@@ -15,6 +18,7 @@ async def lifespan(app: FastAPI):
     yield
 
     stop_scheduler()
+    await engine.dispose()
 
 
 app = FastAPI(lifespan=lifespan)

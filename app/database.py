@@ -18,10 +18,9 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set in the .env file")
 
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=True,
-)
+SQL_ECHO = os.getenv("SQL_ECHO", "false").lower() == "true"
+
+engine = create_async_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
@@ -36,7 +35,12 @@ def create_test_engine():
     if not test_database_url:
         raise ValueError("TEST_DATABASE_URL is not set")
 
-    return create_async_engine(test_database_url, echo=True, poolclass=NullPool)
+    return create_async_engine(
+        test_database_url,
+        echo=True,
+        poolclass=NullPool,
+        pool_pre_ping=True,
+    )
 
 
 class Base(DeclarativeBase):

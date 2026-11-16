@@ -53,11 +53,7 @@ class RecurringTransactionExecutionRepository:
                     next_month_last_day,
                 )
 
-            return date(
-                next_year,
-                next_month,
-                next_day,
-            )
+            return date(next_year, next_month, next_day)
 
         if frequency == "yearly":
 
@@ -82,22 +78,23 @@ class RecurringTransactionExecutionRepository:
     async def process_due_transactions(
         self,
         today: date,
-    ):
-
-        result = await self.session.execute(
-            select(RecurringTransaction)
-            .where(
-                RecurringTransaction.is_active.is_(True),
-                RecurringTransaction.next_run_date <= today,
-            )
-            .order_by(RecurringTransaction.next_run_date.asc())
-        )
-
-        recurring_transactions = result.scalars().all()
+    ) -> int:
 
         processed_count = 0
 
         try:
+            result = await self.session.execute(
+                select(RecurringTransaction)
+                .where(
+                    RecurringTransaction.is_active.is_(True),
+                    RecurringTransaction.next_run_date <= today,
+                )
+                .order_by(RecurringTransaction.next_run_date.asc())
+                .with_for_update(skip_locked=True)
+            )
+
+            recurring_transactions = result.scalars().all()
+
             for recurring in recurring_transactions:
 
                 while recurring.next_run_date <= today and recurring.is_active:
@@ -126,7 +123,7 @@ class RecurringTransactionExecutionRepository:
 
                     result = await self.session.execute(statement)
 
-                    if result.rowcount:
+                    if result.rowcount and result.rowcount > 0:
                         processed_count += 1
 
                     recurring.next_run_date = self.calculate_next_run_date(

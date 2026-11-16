@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -7,6 +8,7 @@ from app.services.recurring_transaction_execution import (
     RecurringTransactionExecutionService,
 )
 
+logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler(timezone="UTC")
 
 
@@ -20,7 +22,10 @@ async def process_recurring_transactions():
 
         processed_count = await service.process_due_transactions(today)
 
-        print(f"Recurring transactions processed: {processed_count}")
+        logger.info(
+            "Recurring transactions processed: %s",
+            processed_count,
+        )
 
 
 def start_scheduler():
@@ -39,9 +44,11 @@ def start_scheduler():
         )
 
         scheduler.start()
+        logger.info("Recurring transaction scheduler started.")
 
 
 def stop_scheduler():
 
     if scheduler.running:
         scheduler.shutdown(wait=False)
+        logger.info("Recurring transaction scheduler stopped.")
