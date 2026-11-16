@@ -3,7 +3,7 @@ import asyncio
 
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 
 from main import app
 
@@ -66,8 +66,6 @@ def clean_database():
 @pytest.fixture
 def auth_headers(clean_database):
 
-    print("AUTH HEADERS FIXTURE IS RUNNING")
-
     user_id = asyncio.run(create_test_user())
 
     token = create_access_token(data={"sub": str(user_id)})
@@ -94,3 +92,34 @@ def client(auth_headers):
 def second_client(second_auth_headers):
     with TestClient(app, headers=second_auth_headers) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def deactivate_default_test_user():
+    def deactivate():
+        async def deactivate_user():
+            async with TestingSessionLocal() as session:
+                user = await session.scalar(
+                    select(User).where(User.email == "test@example.com")
+                )
+
+                assert user is not None
+
+                user.is_active = False
+                await session.commit()
+
+        asyncio.run(deactivate_user())
+
+    return deactivate
+
+
+@pytest.fixture
+def get_user_by_email():
+    def get_user(email):
+        async def fetch_user():
+            async with TestingSessionLocal() as session:
+                return await session.scalar(select(User).where(User.email == email))
+
+        return asyncio.run(fetch_user())
+
+    return get_user

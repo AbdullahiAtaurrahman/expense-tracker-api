@@ -1,6 +1,48 @@
 from fastapi import status
 
 
+def test_inactive_user_cannot_login(client, deactivate_default_test_user):
+    deactivate_default_test_user()
+
+    response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": "test@example.com",
+            "password": "testpassword123",
+        },
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Incorrect email or password"
+
+
+def test_inactive_user_cannot_access_protected_route(
+    client, deactivate_default_test_user
+):
+    deactivate_default_test_user()
+
+    response = client.get("/api/v1/transactions")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_user_created_at_is_saved(client, get_user_by_email):
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "timestamp@example.com",
+            "password": "password123",
+        },
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+
+    user = get_user_by_email("timestamp@example.com")
+
+    assert user is not None
+    assert user.created_at is not None
+
+
 def test_register_user(client):
     response = client.post(
         "/api/v1/auth/register",
@@ -36,7 +78,7 @@ def test_register_user_with_invalid_email(client):
         },
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_register_user_with_short_password(client):
@@ -48,7 +90,7 @@ def test_register_user_with_short_password(client):
         },
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_login_user(client):
