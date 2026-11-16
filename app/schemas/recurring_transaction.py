@@ -5,7 +5,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class RecurringTransactionCreate(BaseModel):
-    amount: float = Field(gt=0)
+    amount: float | None = Field(default=None, gt=0)
+
     transaction_type: Literal["income", "expense"]
     purpose: str = Field(min_length=1)
     category: str | None = Field(default=None, max_length=100)
