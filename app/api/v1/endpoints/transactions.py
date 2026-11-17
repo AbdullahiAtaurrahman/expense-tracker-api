@@ -5,6 +5,7 @@ from app.api.dependencies import get_current_user
 
 from app.database import get_db
 from app.models.user import User
+from app.core.cache import get_or_set, invalidate_user_cache
 
 from datetime import datetime
 
@@ -46,9 +47,12 @@ async def create_transaction(
     service: TransactionService = Depends(get_transaction_service),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.create_transaction(
+    result = await service.create_transaction(
         transaction.model_dump(mode="json"), current_user.id
     )
+    await invalidate_user_cache(current_user.id)
+
+    return result
 
 
 @router.get("/transactions", response_model=list[TransactionResponse])
@@ -97,10 +101,14 @@ async def update_transaction(
         raise HTTPException(
             status_code=404, detail=f"Transaction with ID {transaction_id} not found"
         )
-
+    await invalidate_user_cache(current_user.id)
     return transaction
 
 
+@router.get(
+    "/transactions/summary",
+    response_model=TransactionSummary,
+)
 @router.get(
     "/transactions/summary",
     response_model=TransactionSummary,
@@ -111,10 +119,20 @@ async def get_transaction_summary(
     service: TransactionService = Depends(get_transaction_service),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.get_transaction_summary(
-        user_id=current_user.id,
-        start_date=start_date,
-        end_date=end_date,
+    cache_key = (
+        f"user:{current_user.id}:transactions:summary:"
+        f"{start_date.isoformat() if start_date else 'none'}:"
+        f"{end_date.isoformat() if end_date else 'none'}"
+    )
+
+    return await get_or_set(
+        key=cache_key,
+        factory=lambda: service.get_transaction_summary(
+            user_id=current_user.id,
+            start_date=start_date,
+            end_date=end_date,
+        ),
+        ttl=300,
     )
 
 
@@ -187,5 +205,5 @@ async def delete_transaction(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Transaction with ID {transaction_id} not found",
         )
-
+    await invalidate_user_cache(current_user.id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

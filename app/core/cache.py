@@ -2,6 +2,7 @@ import asyncio
 import time
 from copy import deepcopy
 from typing import Any, Protocol
+from collections.abc import Awaitable, Callable
 
 
 class CacheBackend(Protocol):
@@ -81,3 +82,41 @@ async def invalidate_user_cache(user_id: int) -> None:
     """
 
     await cache.delete_prefix(f"user:{user_id}:")
+
+
+async def get_or_set(
+    key: str,
+    factory: Callable[[], Awaitable[Any]],
+    ttl: int = 300,
+) -> Any:
+    return await get_or_set_with_cache(cache, key, factory, ttl)
+
+
+async def get_or_set_with_cache(
+    backend: CacheBackend,
+    key: str,
+    factory: Callable[[], Awaitable[Any]],
+    ttl: int = 300,
+) -> Any:
+    cached_value = await backend.get(key)
+
+    if cached_value is not None:
+        return cached_value
+
+    value = await factory()
+    await backend.set(key, value, ttl)
+
+    return value
+
+
+async def get_or_set(
+    key: str,
+    factory,
+    ttl: int = 300,
+):
+    return await get_or_set_with_cache(
+        cache,
+        key,
+        factory,
+        ttl,
+    )

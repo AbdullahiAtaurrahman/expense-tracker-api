@@ -1,7 +1,10 @@
 import asyncio
 import pytest
 
-from app.core.cache import MemoryCache
+from app.core.cache import (
+    MemoryCache,
+    get_or_set_with_cache,
+)
 
 
 def test_cache_set_and_get():
@@ -103,5 +106,24 @@ def test_cache_returns_independent_copy():
         result["amount"] = 1000
 
         assert await cache.get("test:key") == {"amount": 500}
+
+    asyncio.run(run_test())
+
+
+def test_get_or_set_caches_result():
+    async def run_test():
+        test_cache = MemoryCache()
+        calls = 0
+
+        async def factory():
+            nonlocal calls
+            calls += 1
+            return {"income": 5000, "expenses": 2000}
+
+        first = await get_or_set_with_cache(test_cache, "summary:1", factory)
+        second = await get_or_set_with_cache(test_cache, "summary:1", factory)
+
+        assert first == second
+        assert calls == 1
 
     asyncio.run(run_test())
